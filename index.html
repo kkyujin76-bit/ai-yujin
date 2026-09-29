@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>민원서비스 찾기</title>
+<meta name="description" content="민원서비스 22종을 서비스명·기관으로 검색하고 민원분야별로 골라 볼 수 있는 안내 페이지">
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --text: #1b2430;
+    --muted: #5b6776;
+    --line: #dde3ea;
+    --brand: #1f4e8c;
+    --brand-soft: #e7eef8;
+    --ok: #17753f;
+    --ok-soft: #e3f4ea;
+    --no: #9a3b12;
+    --no-soft: #fbece4;
+    --focus: #2f6fd1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #11161d;
+      --surface: #1a212b;
+      --text: #e6ebf1;
+      --muted: #9aa6b4;
+      --line: #2c3643;
+      --brand: #8db4ec;
+      --brand-soft: #1f2d42;
+      --ok: #6fd39a;
+      --ok-soft: #173325;
+      --no: #f0a47c;
+      --no-soft: #3a2218;
+      --focus: #8db4ec;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #11161d; --surface: #1a212b; --text: #e6ebf1; --muted: #9aa6b4; --line: #2c3643;
+    --brand: #8db4ec; --brand-soft: #1f2d42; --ok: #6fd39a; --ok-soft: #173325;
+    --no: #f0a47c; --no-soft: #3a2218; --focus: #8db4ec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+    font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 32px 16px 48px; }
+  header h1 { margin: 0 0 4px; font-size: 1.6rem; letter-spacing: -0.02em; }
+  header p { margin: 0; color: var(--muted); }
+
+  .panel {
+    margin-top: 20px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px;
+  }
+  .search { position: relative; }
+  .search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+  .search input {
+    width: 100%; font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px 40px 12px 42px;
+  }
+  .search input:focus { outline: 2px solid var(--focus); outline-offset: 1px; border-color: transparent; }
+  .clear {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    border: 0; background: transparent; color: var(--muted); font-size: 1.2rem;
+    width: 30px; height: 30px; border-radius: 6px; cursor: pointer; display: none;
+  }
+  .clear:hover { background: var(--line); }
+
+  .filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+  .filter-label { font-size: .85rem; color: var(--muted); margin-right: 4px; font-weight: 600; }
+  .chip {
+    font: inherit; font-size: .9rem; cursor: pointer; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--text);
+    padding: 6px 12px; display: inline-flex; gap: 6px; align-items: center;
+  }
+  .chip .n { color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
+  .chip:hover { border-color: var(--brand); }
+  .chip[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--surface); }
+  .chip[aria-pressed="true"] .n { color: inherit; opacity: .8; }
+  .chip:focus-visible, .th-btn:focus-visible, .reset:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .status {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+    margin: 20px 2px 10px;
+  }
+  .count { font-size: 1rem; }
+  .count b { color: var(--brand); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+  .reset {
+    font: inherit; font-size: .85rem; border: 1px solid var(--line); background: var(--surface);
+    color: var(--muted); border-radius: 8px; padding: 5px 10px; cursor: pointer;
+  }
+
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  thead th {
+    text-align: left; font-size: .85rem; color: var(--muted); font-weight: 600;
+    background: var(--brand-soft); padding: 0; border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  .th-btn {
+    font: inherit; color: inherit; background: none; border: 0; width: 100%; text-align: inherit;
+    padding: 11px 14px; cursor: pointer; display: flex; gap: 4px; align-items: center;
+  }
+  .th-btn .arr { opacity: .35; font-size: .75rem; }
+  th[aria-sort="ascending"] .arr, th[aria-sort="descending"] .arr { opacity: 1; color: var(--brand); }
+  th.num .th-btn { justify-content: flex-end; }
+  tbody td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: var(--bg); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .svc { font-weight: 600; }
+  .sid { display: block; font-size: .75rem; color: var(--muted); font-weight: 400; }
+  .tag { display: inline-block; font-size: .8rem; padding: 2px 9px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); white-space: nowrap; }
+  .on { display: inline-block; font-size: .8rem; padding: 2px 9px; border-radius: 999px; white-space: nowrap; font-weight: 600; }
+  .on.yes { background: var(--ok-soft); color: var(--ok); }
+  .on.no { background: var(--no-soft); color: var(--no); }
+  mark { background: #ffe58a; color: #1b2430; border-radius: 2px; padding: 0 1px; }
+
+  .empty { display: none; text-align: center; padding: 40px 16px; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; }
+  footer { margin-top: 24px; font-size: .8rem; color: var(--muted); }
+
+  @media (max-width: 720px) {
+    .wrap { padding-top: 20px; }
+    header h1 { font-size: 1.35rem; }
+    table, thead, tbody, tr, td { display: block; }
+    table { border: 0; background: transparent; }
+    thead { display: none; }
+    tbody tr {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+      padding: 12px 14px; margin-bottom: 10px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px;
+    }
+    tbody tr:hover { background: var(--surface); }
+    tbody td { border: 0; padding: 0; text-align: left !important; }
+    tbody td::before { content: attr(data-label); display: block; font-size: .72rem; color: var(--muted); }
+    tbody td.first { grid-column: 1 / -1; margin-bottom: 4px; }
+    tbody td.first::before { display: none; }
+    .svc { font-size: 1.05rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>민원서비스 찾기</h1>
+    <p>필요한 민원서비스를 검색하거나 분야를 골라 처리기관, 온라인 처리 여부, 처리기한, 수수료를 확인하세요.</p>
+  </header>
+
+  <section class="panel" aria-label="검색 및 필터">
+    <div class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <label for="q" class="sr" style="position:absolute;left:-9999px">민원서비스 검색</label>
+      <input id="q" type="search" placeholder="서비스명·소관기관·분야로 검색 (예: 여권, 주민센터, 세무)" autocomplete="off">
+      <button class="clear" id="clear" type="button" aria-label="검색어 지우기">×</button>
+    </div>
+    <div class="filter-row" role="group" aria-label="민원분야 필터">
+      <span class="filter-label">민원분야</span>
+      <span id="chips" style="display:contents"></span>
+    </div>
+    <div class="filter-row" role="group" aria-label="온라인 처리 필터">
+      <span class="filter-label">온라인처리</span>
+      <span id="onChips" style="display:contents"></span>
+    </div>
+  </section>
+
+  <div class="status">
+    <div class="count" aria-live="polite" id="count"></div>
+    <button class="reset" id="reset" type="button">조건 초기화</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th data-key="서비스명" aria-sort="none"><button class="th-btn" type="button">서비스명 <span class="arr">↕</span></button></th>
+        <th data-key="소관기관" aria-sort="none"><button class="th-btn" type="button">소관기관 <span class="arr">↕</span></button></th>
+        <th data-key="민원분야" aria-sort="none"><button class="th-btn" type="button">민원분야 <span class="arr">↕</span></button></th>
+        <th data-key="온라인처리" aria-sort="none"><button class="th-btn" type="button">온라인처리 <span class="arr">↕</span></button></th>
+        <th data-key="처리기한일" class="num" aria-sort="none"><button class="th-btn" type="button">처리기한 <span class="arr">↕</span></button></th>
+        <th data-key="수수료" class="num" aria-sort="none"><button class="th-btn" type="button">수수료 <span class="arr">↕</span></button></th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="empty" id="empty">조건에 맞는 민원서비스가 없습니다. 검색어를 바꾸거나 필터를 초기화해 보세요.</div>
+
+  <footer>
+    처리기한 0일은 '즉시 처리', 수수료 0원은 '무료'로 표시합니다. 실제 처리기한과 수수료는 소관기관에 확인하시기 바랍니다.
+  </footer>
+</div>
+
+<script>
+const DATA = [
+  {"서비스ID":"S001","서비스명":"주민등록등본 발급","소관기관":"주민센터","민원분야":"주민등록","온라인처리":"가능","처리기한일":7,"수수료":500},
+  {"서비스ID":"S002","서비스명":"전입신고","소관기관":"복지정책과","민원분야":"주민등록","온라인처리":"불가","처리기한일":1,"수수료":0},
+  {"서비스ID":"S003","서비스명":"인감증명 발급","소관기관":"복지정책과","민원분야":"주민등록","온라인처리":"가능","처리기한일":1,"수수료":0},
+  {"서비스ID":"S004","서비스명":"주민등록증 재발급","소관기관":"건축과","민원분야":"주민등록","온라인처리":"가능","처리기한일":0,"수수료":0},
+  {"서비스ID":"S005","서비스명":"건축물대장 발급","소관기관":"구청 민원봉사과","민원분야":"건축","온라인처리":"불가","처리기한일":0,"수수료":1000},
+  {"서비스ID":"S006","서비스명":"건축허가 신청","소관기관":"건축과","민원분야":"건축","온라인처리":"불가","처리기한일":1,"수수료":2000},
+  {"서비스ID":"S007","서비스명":"용도변경 신고","소관기관":"시청 민원과","민원분야":"건축","온라인처리":"불가","처리기한일":0,"수수료":0},
+  {"서비스ID":"S008","서비스명":"지방세 납부확인서","소관기관":"건축과","민원분야":"세무","온라인처리":"가능","처리기한일":1,"수수료":1000},
+  {"서비스ID":"S009","서비스명":"취득세 신고","소관기관":"교통행정과","민원분야":"세무","온라인처리":"가능","처리기한일":0,"수수료":0},
+  {"서비스ID":"S010","서비스명":"재산세 조회","소관기관":"교통행정과","민원분야":"세무","온라인처리":"가능","처리기한일":3,"수수료":0},
+  {"서비스ID":"S011","서비스명":"기초연금 신청","소관기관":"건축과","민원분야":"복지","온라인처리":"가능","처리기한일":7,"수수료":500},
+  {"서비스ID":"S012","서비스명":"복지급여 조회","소관기관":"시청 민원과","민원분야":"복지","온라인처리":"가능","처리기한일":14,"수수료":5000},
+  {"서비스ID":"S013","서비스명":"장애인 등록","소관기관":"주민센터","민원분야":"복지","온라인처리":"가능","처리기한일":5,"수수료":0},
+  {"서비스ID":"S014","서비스명":"자동차 등록","소관기관":"주민센터","민원분야":"교통","온라인처리":"가능","처리기한일":1,"수수료":5000},
+  {"서비스ID":"S015","서비스명":"운전면허 갱신","소관기관":"교통행정과","민원분야":"교통","온라인처리":"불가","처리기한일":1,"수수료":0},
+  {"서비스ID":"S016","서비스명":"주정차 위반 조회","소관기관":"주민센터","민원분야":"교통","온라인처리":"가능","처리기한일":7,"수수료":1000},
+  {"서비스ID":"S017","서비스명":"배출시설 신고","소관기관":"주민센터","민원분야":"환경","온라인처리":"가능","처리기한일":1,"수수료":0},
+  {"서비스ID":"S018","서비스명":"폐기물 처리 신청","소관기관":"시청 민원과","민원분야":"환경","온라인처리":"가능","처리기한일":14,"수수료":5000},
+  {"서비스ID":"S019","서비스명":"식품영업 신고","소관기관":"건축과","민원분야":"위생","온라인처리":"가능","처리기한일":3,"수수료":2000},
+  {"서비스ID":"S020","서비스명":"위생업소 조회","소관기관":"시청 민원과","민원분야":"위생","온라인처리":"불가","처리기한일":7,"수수료":500},
+  {"서비스ID":"S021","서비스명":"여권 발급 신청","소관기관":"건축과","민원분야":"여권","온라인처리":"가능","처리기한일":7,"수수료":1000},
+  {"서비스ID":"S022","서비스명":"여권 재발급","소관기관":"교통행정과","민원분야":"여권","온라인처리":"가능","처리기한일":1,"수수료":1000}
+];
+
+const state = { q: "", field: "전체", online: "전체", sortKey: null, sortDir: 1 };
+const $ = (id) => document.getElementById(id);
+const norm = (s) => String(s).toLowerCase().replace(/\s+/g, "");
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// 검색어 강조 (공백 무시 매칭)
+function highlight(text) {
+  const q = norm(state.q);
+  if (!q) return esc(text);
+  const chars = [...text];
+  let compact = "", map = [];
+  chars.forEach((ch, i) => { if (!/\s/.test(ch)) { compact += ch.toLowerCase(); map.push(i); } });
+  const at = compact.indexOf(q);
+  if (at < 0) return esc(text);
+  const s = map[at], e = map[at + q.length - 1] + 1;
+  return esc(chars.slice(0, s).join("")) + "<mark>" + esc(chars.slice(s, e).join("")) + "</mark>" + esc(chars.slice(e).join(""));
+}
+
+const days = (d) => (d === 0 ? "즉시" : d + "일");
+const fee = (f) => (f === 0 ? "무료" : f.toLocaleString("ko-KR") + "원");
+
+const FIELDS = ["전체", ...[...new Set(DATA.map((d) => d.민원분야))]];
+
+function matches(d, ignoreField = false) {
+  const q = norm(state.q);
+  const hitQ = !q || [d.서비스명, d.소관기관, d.민원분야, d.서비스ID].some((v) => norm(v).includes(q));
+  const hitF = ignoreField || state.field === "전체" || d.민원분야 === state.field;
+  const hitO = state.online === "전체" || d.온라인처리 === state.online;
+  return hitQ && hitF && hitO;
+}
+
+function renderChips() {
+  const base = DATA.filter((d) => matches(d, true));
+  $("chips").innerHTML = FIELDS.map((f) => {
+    const n = f === "전체" ? base.length : base.filter((d) => d.민원분야 === f).length;
+    return `<button type="button" class="chip" data-field="${esc(f)}" aria-pressed="${state.field === f}">${esc(f)} <span class="n">${n}</span></button>`;
+  }).join("");
+  $("onChips").innerHTML = ["전체", "가능", "불가"].map((o) =>
+    `<button type="button" class="chip" data-online="${o}" aria-pressed="${state.online === o}">${o}</button>`
+  ).join("");
+}
+
+function render() {
+  let list = DATA.filter((d) => matches(d));
+  if (state.sortKey) {
+    const k = state.sortKey;
+    list = [...list].sort((a, b) =>
+      (typeof a[k] === "number" ? a[k] - b[k] : String(a[k]).localeCompare(String(b[k]), "ko")) * state.sortDir
+    );
+  }
+  $("rows").innerHTML = list.map((d) => `
+    <tr>
+      <td class="first" data-label="서비스명"><span class="svc">${highlight(d.서비스명)}</span><span class="sid">${esc(d.서비스ID)}</span></td>
+      <td data-label="소관기관">${highlight(d.소관기관)}</td>
+      <td data-label="민원분야"><span class="tag">${esc(d.민원분야)}</span></td>
+      <td data-label="온라인처리"><span class="on ${d.온라인처리 === "가능" ? "yes" : "no"}">${esc(d.온라인처리)}</span></td>
+      <td data-label="처리기한" class="num">${days(d.처리기한일)}</td>
+      <td data-label="수수료" class="num">${fee(d.수수료)}</td>
+    </tr>`).join("");
+
+  const filtered = state.q || state.field !== "전체" || state.online !== "전체";
+  $("count").innerHTML = filtered
+    ? `전체 ${DATA.length}건 중 <b>${list.length}</b>건 표시`
+    : `전체 <b>${DATA.length}</b>건`;
+  $("empty").style.display = list.length ? "none" : "block";
+  document.querySelector("table").style.display = list.length ? "" : "none";
+  $("clear").style.display = state.q ? "block" : "none";
+  renderChips();
+
+  document.querySelectorAll("thead th").forEach((th) => {
+    const on = th.dataset.key === state.sortKey;
+    th.setAttribute("aria-sort", on ? (state.sortDir === 1 ? "ascending" : "descending") : "none");
+    th.querySelector(".arr").textContent = on ? (state.sortDir === 1 ? "▲" : "▼") : "↕";
+  });
+}
+
+$("q").addEventListener("input", (e) => { state.q = e.target.value; render(); });
+$("clear").addEventListener("click", () => { state.q = ""; $("q").value = ""; $("q").focus(); render(); });
+$("chips").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-field]"); if (!b) return;
+  state.field = b.dataset.field; render();
+});
+$("onChips").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-online]"); if (!b) return;
+  state.online = b.dataset.online; render();
+});
+$("reset").addEventListener("click", () => {
+  Object.assign(state, { q: "", field: "전체", online: "전체", sortKey: null, sortDir: 1 });
+  $("q").value = ""; render();
+});
+document.querySelectorAll("thead th").forEach((th) =>
+  th.querySelector("button").addEventListener("click", () => {
+    const k = th.dataset.key;
+    if (state.sortKey === k) state.sortDir *= -1; else { state.sortKey = k; state.sortDir = 1; }
+    render();
+  })
+);
+
+render();
+</script>
+</body>
+</html>
